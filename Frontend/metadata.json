@@ -1,0 +1,6 @@
+{
+  "name": "ModMarket Launcher v2",
+  "description": "A premium desktop gaming launcher for Euro Truck Simulator 2 (ETS2) with mod discovery, management, performance optimization, and interactive dashboard capabilities.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
