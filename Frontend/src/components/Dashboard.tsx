@@ -17,7 +17,7 @@ import {
   Truck, 
   Wrench 
 } from 'lucide-react';
-import { Mod, InstalledMod, Page } from '../types';
+import { InstalledMod, Page } from '../types';
 import { MOCK_NEWS, MOCK_RECENT_ACTIVITY } from '../mockData';
 
 interface DashboardProps {

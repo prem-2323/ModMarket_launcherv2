@@ -6,6 +6,7 @@
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
     "build": "tsc",
+    "seed": "tsx src/seed/seedMods.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {

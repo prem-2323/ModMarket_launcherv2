@@ -9,7 +9,9 @@ import {
   Settings, 
   Play, 
   CheckCircle,
-  Truck
+  Truck,
+  Heart,
+  Shield
 } from 'lucide-react';
 import { Page, DownloadItem } from '../types';
 
@@ -42,7 +44,9 @@ export default function Sidebar({
     },
     { id: 'payments' as Page, label: 'Payments', icon: CreditCard },
     { id: 'profile' as Page, label: 'Profile', icon: User },
+    { id: 'favorites' as Page, label: 'Wishlist', icon: Heart },
     { id: 'settings' as Page, label: 'Settings', icon: Settings },
+    { id: 'admin' as Page, label: 'Admin', icon: Shield },
   ];
 
   return (

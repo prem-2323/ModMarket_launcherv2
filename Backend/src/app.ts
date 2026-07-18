@@ -4,6 +4,10 @@ import helmet from 'helmet'
 import morgan from 'morgan'
 import authRoutes from './routes/auth.routes'
 import userRoutes from './routes/user.routes'
+import modRoutes from './routes/mod.routes'
+import reviewRoutes from './routes/review.routes'
+import favoriteRoutes from './routes/favorite.routes'
+import adminRoutes from './routes/admin.routes'
 import { errorHandler } from './middleware/error.middleware'
 
 const app = express()
@@ -19,6 +23,10 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/auth', authRoutes)
 app.use('/api/user', userRoutes)
+app.use('/api/mods', modRoutes)
+app.use('/api/reviews', reviewRoutes)
+app.use('/api/favorites', favoriteRoutes)
+app.use('/api/admin', adminRoutes)
 
 app.use(errorHandler)
 

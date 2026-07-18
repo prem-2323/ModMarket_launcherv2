@@ -12,7 +12,6 @@ import {
   ShieldCheck,
   Zap
 } from 'lucide-react';
-import { Achievement } from '../types';
 import { MOCK_ACHIEVEMENTS } from '../mockData';
 
 interface ProfileProps {

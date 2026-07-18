@@ -7,10 +7,9 @@ import {
   Purchase, 
   NotificationItem 
 } from './types';
-import { MOCK_MODS, MOCK_ACHIEVEMENTS } from './mockData';
 import { api } from './services/api';
+import { modApi, mapMod } from './services/modApi';
 
-// Sub-components
 import TitleBar from './components/TitleBar';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -21,6 +20,8 @@ import VerifyEmail from './components/VerifyEmail';
 import Store from './components/Store';
 import ModDetails from './components/ModDetails';
 import Library from './components/Library';
+import Favorites from './components/Favorites';
+import AdminDashboard from './components/AdminDashboard';
 import Downloads from './components/Downloads';
 import Payments from './components/Payments';
 import Profile from './components/Profile';
@@ -28,43 +29,26 @@ import SettingsView from './components/Settings';
 import LaunchScreen from './components/LaunchScreen';
 import StatusWidget from './components/StatusWidget';
 
-// Seed initial state helper
-const SEED_INSTALLED: InstalledMod[] = [
-  {
-    ...MOCK_MODS[1], // Project Balkans Map (Free)
-    enabled: true,
-    priority: 1,
-    installDate: '2026-06-20',
-  },
-  {
-    ...MOCK_MODS[5], // Real-Physics Suspension (Free)
-    enabled: true,
-    priority: 0,
-    installDate: '2026-07-02',
-  }
-];
-
 const SEED_NOTIFS: NotificationItem[] = [
   {
     id: 'notif-1',
     title: 'MME Diagnostics Secure',
-    message: 'Welcome back, adspm2323. All local ETS2 assembly channels have been validated.',
+    message: 'Welcome back. All local ETS2 assembly channels have been validated.',
     time: 'Just now',
     read: false,
     type: 'success'
   },
   {
     id: 'notif-2',
-    title: 'Graphics Update Ready',
-    message: 'Next-Gen Graphics Overhaul V5 has a compatibility patch pending.',
+    title: 'Marketplace Live',
+    message: 'Browse 30+ mods now available on the ModMarket store.',
     time: '2 hours ago',
     read: false,
-    type: 'warning'
+    type: 'info'
   }
 ];
 
 export default function App() {
-  // Auth state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [authPage, setAuthPage] = useState<AuthPage>('login');
@@ -85,24 +69,32 @@ export default function App() {
     }
   }, []);
 
-  // Page and sub-view states
   const [currentTab, setCurrentTab] = useState<Page>('dashboard');
   const [selectedModDetails, setSelectedModDetails] = useState<Mod | null>(null);
 
-  // Core domain states (hydrated from local storage)
+  const [modsCache, setModsCache] = useState<Mod[]>([]);
+
+  useEffect(() => {
+    modApi.getAll().then((res) => {
+      if (res.success) {
+        setModsCache(res.mods.map(mapMod));
+      }
+    });
+  }, []);
+
   const [installedMods, setInstalledMods] = useState<InstalledMod[]>(() => {
     const saved = localStorage.getItem('mm_installed_mods');
-    return saved ? JSON.parse(saved) : SEED_INSTALLED;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [purchasedModIds, setPurchasedModIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('mm_purchased_mod_ids');
-    return saved ? JSON.parse(saved) : ['mod-1']; // "Scania S Next-Gen" is premium and pre-purchased
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [favoriteModIds, setFavoriteModIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('mm_favorite_mod_ids');
-    return saved ? JSON.parse(saved) : ['mod-3']; // Graphics overhaul in favorites
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [downloads, setDownloads] = useState<DownloadItem[]>(() => {
@@ -112,18 +104,7 @@ export default function App() {
 
   const [purchases, setPurchases] = useState<Purchase[]>(() => {
     const saved = localStorage.getItem('mm_purchases');
-    return saved ? JSON.parse(saved) : [
-      {
-        id: 'pur-1',
-        modId: 'mod-1',
-        modTitle: 'Scania S Next-Gen Custom V2.5',
-        price: 14.99,
-        date: '2026-06-12',
-        paymentMethod: 'Card',
-        status: 'Success',
-        invoiceNo: 'MME-INV-8432A'
-      }
-    ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
@@ -131,7 +112,6 @@ export default function App() {
     return saved ? JSON.parse(saved) : SEED_NOTIFS;
   });
 
-  // ETS2 detection on startup via Electron API
   useEffect(() => {
     if (window.electronAPI) {
       window.electronAPI.detectETS2().then((result) => {
@@ -144,13 +124,21 @@ export default function App() {
     }
   }, []);
 
-  // Flow State
+  useEffect(() => {
+    if (api.isAuthenticated()) {
+      modApi.getFavoriteIds().then((res) => {
+        if (res.success) {
+          setFavoriteModIds(res.favoriteIds);
+        }
+      });
+    }
+  }, [isAuthenticated]);
+
   const [isAudioOn, setIsAudioOn] = useState<boolean>(true);
   const [isLaunching, setIsLaunching] = useState<boolean>(false);
   const [isGameRunning, setIsGameRunning] = useState<boolean>(false);
   const [pendingCheckoutMod, setPendingCheckoutMod] = useState<Mod | null>(null);
 
-  // Sync to local storage
   useEffect(() => {
     localStorage.setItem('mm_installed_mods', JSON.stringify(installedMods));
   }, [installedMods]);
@@ -175,7 +163,6 @@ export default function App() {
     localStorage.setItem('mm_notifications', JSON.stringify(notifications));
   }, [notifications]);
 
-  // Simulation loop for active downloads progress
   useEffect(() => {
     const interval = setInterval(() => {
       setDownloads((prevJobs) => {
@@ -186,8 +173,7 @@ export default function App() {
             const nextProgress = job.progress + Math.floor(Math.random() * 8) + 4;
             
             if (nextProgress >= 100) {
-              // Complete download! Add mod to installed mods
-              const modToAdd = MOCK_MODS.find((m) => m.id === job.id);
+              const modToAdd = modsCache.find((m) => m.id === job.id);
               if (modToAdd) {
                 setInstalledMods((prevInstalled) => {
                   if (prevInstalled.some((m) => m.id === modToAdd.id)) return prevInstalled;
@@ -208,14 +194,12 @@ export default function App() {
                 });
               }
 
-              // Create success notification
               pushNotification(
                 'Download Finished',
                 `"${job.title}" has been successfully downloaded and deployed to ETS2 mod folder.`,
                 'success'
               );
 
-              // Voice cue
               if (window.speechSynthesis && isAudioOn) {
                 const utterance = new SpeechSynthesisUtterance(`${job.title} download complete.`);
                 window.speechSynthesis.speak(utterance);
@@ -230,7 +214,6 @@ export default function App() {
                 downloadedSize: job.totalSize
               };
             } else {
-              // Normal increment
               const totalMb = parseFloat(job.totalSize);
               const currentMb = ((nextProgress / 100) * totalMb).toFixed(1);
               const speed = (Math.random() * 18 + 22).toFixed(1) + ' MB/s';
@@ -253,9 +236,8 @@ export default function App() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isAudioOn]);
+  }, [isAudioOn, modsCache]);
 
-  // Push notification helper
   const pushNotification = (title: string, message: string, type: 'info' | 'success' | 'warning' | 'download' = 'info') => {
     setNotifications((prev) => [
       {
@@ -278,7 +260,6 @@ export default function App() {
     setNotifications([]);
   };
 
-  // Launch Game Overlay trigger
   const handleLaunchGame = async () => {
     if (isGameRunning) {
       const shouldStop = window.electronAPI
@@ -310,7 +291,6 @@ export default function App() {
     }
   };
 
-  // Quick Action Diagnostics trigger
   const handleTriggerQuickAction = async (actionName: string) => {
     if (window.electronAPI) {
       await window.electronAPI.alert(`Initializing diagnostic utility script: "${actionName}"...`);
@@ -332,7 +312,6 @@ export default function App() {
     }, 1000);
   };
 
-  // Library functions
   const handleToggleEnabled = (modId: string) => {
     setInstalledMods((prev) => prev.map((m) => {
       if (m.id === modId) {
@@ -354,12 +333,10 @@ export default function App() {
     if (index === -1) return;
 
     if (direction === 'up' && index > 0) {
-      // Swap priorities
       const temp = list[index].priority;
       list[index].priority = list[index - 1].priority;
       list[index - 1].priority = temp;
     } else if (direction === 'down' && index < list.length - 1) {
-      // Swap priorities
       const temp = list[index].priority;
       list[index].priority = list[index + 1].priority;
       list[index + 1].priority = temp;
@@ -393,11 +370,19 @@ export default function App() {
     pushNotification('Repair Successful', 'Checked modification integrity. 0 corrupt nodes found.', 'success');
   };
 
-  // Store & Payments functions
-  const handleToggleFavorite = (modId: string) => {
-    setFavoriteModIds((prev) => 
-      prev.includes(modId) ? prev.filter((id) => id !== modId) : [...prev, modId]
-    );
+  const handleToggleFavorite = async (modId: string) => {
+    const isFav = favoriteModIds.includes(modId);
+    if (isFav) {
+      const res = await modApi.removeFavorite(modId);
+      if (res.success) {
+        setFavoriteModIds((prev) => prev.filter((id) => id !== modId));
+      }
+    } else {
+      const res = await modApi.addFavorite(modId);
+      if (res.success) {
+        setFavoriteModIds((prev) => [...prev, modId]);
+      }
+    }
   };
 
   const handleBuyMod = (mod: Mod) => {
@@ -406,10 +391,8 @@ export default function App() {
   };
 
   const handleConfirmPurchase = (mod: Mod, method: 'Google Pay' | 'UPI' | 'PhonePe' | 'Card') => {
-    // Add to purchased lists
-    setPurchasedModIds((prev) => [...prev, mod.id]);
+    setPurchasedModIds((prev) => [...prev, mod._id]);
     
-    // Add transaction log
     const invoiceNo = `MME-INV-${Math.floor(Math.random() * 90000 + 10000)}A`;
     const newPurchase: Purchase = {
       id: `pur-${Date.now()}`,
@@ -429,10 +412,9 @@ export default function App() {
   };
 
   const handleDownloadMod = (modId: string) => {
-    const mod = MOCK_MODS.find((m) => m.id === modId);
+    const mod = modsCache.find((m) => m.id === modId);
     if (!mod) return;
 
-    // Add to download queue
     const isAlreadyQueued = downloads.some((d) => d.id === modId && d.status !== 'cancelled');
     if (isAlreadyQueued) {
       setCurrentTab('downloads');
@@ -456,7 +438,6 @@ export default function App() {
     pushNotification('Download Started', `Connecting to France CDN node to retrieve "${mod.title}".`, 'download');
   };
 
-  // Downloads manager controls
   const handlePauseResumeDownload = (id: string) => {
     setDownloads((prev) => prev.map((job) => {
       if (job.id === id) {
@@ -542,7 +523,6 @@ export default function App() {
   return (
     <div id="launcher-wrapper" className="min-h-screen bg-[#0B0F19] text-[#FFFFFF] flex flex-col font-sans select-none overflow-hidden">
       
-      {/* 1. Fullscreen Loader Overlay */}
       {isLaunching && (
         <LaunchScreen 
           onComplete={handleCompleteLaunch} 
@@ -550,7 +530,6 @@ export default function App() {
         />
       )}
 
-      {/* 2. Top Bar Navigation Title bar */}
       <TitleBar 
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
@@ -565,16 +544,13 @@ export default function App() {
         onLogout={handleLogout}
       />
 
-      {/* 3. Main Split Content Area */}
       <div className="flex-1 flex overflow-hidden">
         
-        {/* Central Component Viewport */}
         <div 
           id="main-viewport-content"
           className="flex-1 bg-gradient-to-br from-[#0B0F19] via-[#0B0F19] to-[#151D30]/20 p-6 overflow-y-auto custom-scrollbar"
         >
           {isGameRunning && (
-            /* ACTIVE RUNNING OVERLAY TOAST */
             <div className="mb-6 p-4 bg-[#10B981]/10 border border-[#10B981]/30 rounded-2xl flex items-center justify-between animate-fade-in shadow-md">
               <div className="flex items-center space-x-3 text-xs text-[#FFFFFF]">
                 <span className="flex h-2.5 w-2.5 relative shrink-0">
@@ -595,10 +571,9 @@ export default function App() {
             </div>
           )}
 
-          {/* Conditional page render router */}
           {selectedModDetails ? (
             <ModDetails 
-              mod={selectedModDetails}
+              modId={selectedModDetails._id}
               purchasedModIds={purchasedModIds}
               installedModIds={installedMods.map(m => m.id)}
               favoriteModIds={favoriteModIds}
@@ -619,9 +594,24 @@ export default function App() {
                 />
               )}
 
+              {currentTab === 'favorites' && (
+                <Favorites
+                  favoriteModIds={favoriteModIds}
+                  purchasedModIds={purchasedModIds}
+                  installedModIds={installedMods.map(m => m.id)}
+                  onToggleFavorite={handleToggleFavorite}
+                  onBuyMod={handleBuyMod}
+                  onDownloadMod={handleDownloadMod}
+                  onSelectModDetails={(mod) => setSelectedModDetails(mod)}
+                />
+              )}
+
+              {currentTab === 'admin' && (
+                <AdminDashboard />
+              )}
+
               {currentTab === 'store' && (
                 <Store 
-                  mods={MOCK_MODS}
                   purchasedModIds={purchasedModIds}
                   installedModIds={installedMods.map(m => m.id)}
                   favoriteModIds={favoriteModIds}
@@ -682,7 +672,6 @@ export default function App() {
 
       </div>
 
-      {/* 4. Bottom Right Status Diagnostics Monitor Widget */}
       <StatusWidget downloads={downloads} />
 
     </div>
