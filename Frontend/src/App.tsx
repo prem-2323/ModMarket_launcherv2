@@ -8,11 +8,13 @@ import {
   NotificationItem 
 } from './types';
 import { MOCK_MODS, MOCK_ACHIEVEMENTS } from './mockData';
+import { api } from './services/api';
 
 // Sub-components
 import TitleBar from './components/TitleBar';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
+import AuthScreen from './components/AuthScreen';
 import Store from './components/Store';
 import ModDetails from './components/ModDetails';
 import Library from './components/Library';
@@ -59,6 +61,25 @@ const SEED_NOTIFS: NotificationItem[] = [
 ];
 
 export default function App() {
+  // Auth state
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    if (api.isAuthenticated()) {
+      api.getProfile().then((res) => {
+        if (res.success) {
+          setIsAuthenticated(true);
+        } else {
+          api.logout();
+        }
+        setAuthLoading(false);
+      });
+    } else {
+      setAuthLoading(false);
+    }
+  }, []);
+
   // Page and sub-view states
   const [currentTab, setCurrentTab] = useState<Page>('dashboard');
   const [selectedModDetails, setSelectedModDetails] = useState<Mod | null>(null);
@@ -463,6 +484,28 @@ export default function App() {
     setDownloads((prev) => prev.filter((d) => d.status !== 'completed' && d.status !== 'cancelled'));
   };
 
+  const handleAuthSuccess = () => {
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    api.logout();
+    setIsAuthenticated(false);
+    setCurrentTab('dashboard');
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#12CFCE] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
+  }
+
   return (
     <div id="launcher-wrapper" className="min-h-screen bg-[#0B0F19] text-[#FFFFFF] flex flex-col font-sans select-none overflow-hidden">
       
@@ -486,6 +529,7 @@ export default function App() {
         downloads={downloads}
         onLaunchGame={handleLaunchGame}
         isGameRunning={isGameRunning}
+        onLogout={handleLogout}
       />
 
       {/* 3. Main Split Content Area */}

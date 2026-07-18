@@ -15,7 +15,8 @@ import {
   CreditCard,
   Truck,
   Gamepad2,
-  LogIn
+  LogIn,
+  LogOut
 } from 'lucide-react';
 import { NotificationItem, Page, DownloadItem } from '../types';
 
@@ -30,6 +31,7 @@ interface TitleBarProps {
   downloads: DownloadItem[];
   onLaunchGame: () => void;
   isGameRunning: boolean;
+  onLogout: () => void;
 }
 
 export default function TitleBar({
@@ -43,6 +45,7 @@ export default function TitleBar({
   downloads,
   onLaunchGame,
   isGameRunning,
+  onLogout,
 }: TitleBarProps) {
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -243,10 +246,19 @@ export default function TitleBar({
             <User className="w-3.5 h-3.5 text-[#FFFFFF]" />
           </div>
           <div className="hidden sm:flex flex-col text-left">
-            <span className="text-xs font-semibold text-[#FFFFFF]">adspm2323</span>
+            <span className="text-xs font-semibold text-[#FFFFFF]">Driver</span>
             <span className="text-[9px] text-[#94A3B8]">Pro Driver</span>
           </div>
         </div>
+
+        {/* Logout */}
+        <button
+          onClick={onLogout}
+          className="p-2 rounded-lg border border-[#232F4C] bg-[#151D30] text-[#94A3B8] hover:text-[#EF4444] hover:border-red-500/50 transition-all duration-200"
+          title="Sign Out"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
 
         {/* Quick Settings Icon */}
         <button
