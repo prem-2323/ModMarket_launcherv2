@@ -1,0 +1,18 @@
+cd "C:\Users\premk\OneDrive\Desktop\modmarket-launcher-v2\Backend"
+npm install
+npm start
+
+
+
+cd "C:\Users\premk\OneDrive\Desktop\modmarket-launcher-v2\Frontend"
+npm install
+npm run dev
+
+
+cd "C:\Users\premk\OneDrive\Desktop\modmarket-launcher-v2\Frontend"
+npm install
+npm run electron:build
+
+
+cd "C:\Users\premk\OneDrive\Desktop\modmarket-launcher-v2\Frontend"
+npm run electron:dev
