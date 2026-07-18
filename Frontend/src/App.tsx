@@ -14,7 +14,10 @@ import { api } from './services/api';
 import TitleBar from './components/TitleBar';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
-import AuthScreen from './components/AuthScreen';
+import AuthScreen, { AuthPage } from './components/AuthScreen';
+import ForgotPassword from './components/ForgotPassword';
+import ResetPassword from './components/ResetPassword';
+import VerifyEmail from './components/VerifyEmail';
 import Store from './components/Store';
 import ModDetails from './components/ModDetails';
 import Library from './components/Library';
@@ -64,6 +67,8 @@ export default function App() {
   // Auth state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
+  const [authPage, setAuthPage] = useState<AuthPage>('login');
+  const [resetToken, setResetToken] = useState<string | null>(null);
 
   useEffect(() => {
     if (api.isAuthenticated()) {
@@ -486,7 +491,26 @@ export default function App() {
 
   const handleAuthSuccess = () => {
     setIsAuthenticated(true);
+    setAuthPage('login');
   };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const vToken = params.get('token');
+    const page = params.get('page') as AuthPage | null;
+
+    if (page === 'reset-password' || params.get('reset') === '1') {
+      if (vToken) {
+        setResetToken(vToken);
+        setAuthPage('reset-password');
+      }
+    } else if (page === 'verify-email' || params.get('verify') === '1') {
+      if (vToken) {
+        setResetToken(vToken);
+        setAuthPage('verify-email');
+      }
+    }
+  }, []);
 
   const handleLogout = () => {
     api.logout();
@@ -503,7 +527,16 @@ export default function App() {
   }
 
   if (!isAuthenticated) {
-    return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
+    switch (authPage) {
+      case 'forgot-password':
+        return <ForgotPassword onBack={() => setAuthPage('login')} />
+      case 'reset-password':
+        return <ResetPassword token={resetToken || ''} onSuccess={() => setAuthPage('login')} />
+      case 'verify-email':
+        return <VerifyEmail token={resetToken || ''} onSuccess={() => setAuthPage('login')} />
+      default:
+        return <AuthScreen onAuthSuccess={handleAuthSuccess} onNavigate={setAuthPage} />
+    }
   }
 
   return (

@@ -90,6 +90,27 @@ export const api = {
     })
   },
 
+  verifyEmail(token: string): Promise<ApiResponse> {
+    return request('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    })
+  },
+
+  forgotPassword(email: string): Promise<ApiResponse> {
+    return request('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    })
+  },
+
+  resetPassword(token: string, password: string): Promise<ApiResponse> {
+    return request('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    })
+  },
+
   isAuthenticated(): boolean {
     return !!getToken()
   },

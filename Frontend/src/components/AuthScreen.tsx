@@ -2,11 +2,14 @@ import React, { useState } from 'react'
 import { Gamepad2, Mail, Lock, User, LogIn, UserPlus, AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { api } from '../services/api'
 
+export type AuthPage = 'login' | 'register' | 'forgot-password' | 'verify-email' | 'reset-password'
+
 interface AuthScreenProps {
   onAuthSuccess: () => void
+  onNavigate: (page: AuthPage) => void
 }
 
-export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
+export default function AuthScreen({ onAuthSuccess, onNavigate }: AuthScreenProps) {
   const [isLogin, setIsLogin] = useState(true)
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
@@ -14,6 +17,7 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [registered, setRegistered] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -21,29 +25,56 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
     setLoading(true)
 
     try {
-      let success: boolean
       if (isLogin) {
-        success = await api.loginAndSave(email, password)
-        if (!success) {
+        const success = await api.loginAndSave(email, password)
+        if (success) {
+          onAuthSuccess()
+        } else {
           const res = await api.login(email, password)
           setError(res.message || 'Login failed')
         }
       } else {
-        success = await api.registerAndSave(username, email, password)
-        if (!success) {
-          const res = await api.register(username, email, password)
+        const res = await api.register(username, email, password)
+        if (res.success && res.token) {
+          api.logout()
+          setRegistered(true)
+        } else {
           setError(res.message || 'Registration failed')
         }
-      }
-
-      if (success) {
-        onAuthSuccess()
       }
     } catch {
       setError('Connection error. Make sure the backend is running.')
     } finally {
       setLoading(false)
     }
+  }
+
+  if (registered) {
+    return (
+      <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(18,207,206,0.08),transparent_70%)]" />
+        <div className="relative w-full max-w-md">
+          <div className="bg-[#151D30]/80 border border-[#232F4C] rounded-3xl p-8 shadow-2xl backdrop-blur-xl text-center">
+            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[#0B0F19] border border-[#12CFCE]/20 shadow-[0_0_20px_rgba(18,207,206,0.15)] mb-4 mx-auto">
+              <Gamepad2 className="w-7 h-7 text-[#12CFCE]" />
+            </div>
+            <h2 className="text-lg font-black text-[#FFFFFF] mb-2">
+              Account Created
+            </h2>
+            <p className="text-xs text-[#94A3B8] mb-6">
+              A verification link has been sent to <strong className="text-[#12CFCE]">{email}</strong>.<br />
+              Check your inbox (and spam folder) to activate your account.
+            </p>
+            <button
+              onClick={() => { setIsLogin(true); setRegistered(false) }}
+              className="px-6 py-3 bg-[#12CFCE] hover:bg-[#12CFCE]/90 text-[#0B0F19] font-black text-sm rounded-xl transition-all duration-300 cursor-pointer"
+            >
+              Sign In
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -126,6 +157,18 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
                 </button>
               </div>
             </div>
+
+            {isLogin && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => onNavigate('forgot-password')}
+                  className="text-[10px] text-[#94A3B8] hover:text-[#12CFCE] transition-colors cursor-pointer"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+            )}
 
             {error && (
               <div className="flex items-center gap-2 p-3 bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl text-xs text-[#EF4444]">

@@ -1,6 +1,8 @@
+import crypto from 'crypto'
 import User from '../models/User'
 import { generateToken } from '../utils/jwt'
 import { logger } from '../utils/logger'
+import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/email'
 
 export async function registerUser(
   username: string,
@@ -13,7 +15,13 @@ export async function registerUser(
     throw new Error('User already exists')
   }
 
-  const user = await User.create({ username, email, password })
+  const verificationToken = crypto.randomBytes(32).toString('hex')
+  const user = await User.create({ username, email, password, verificationToken })
+
+  sendVerificationEmail(email, verificationToken).catch((err) =>
+    logger.error('Failed to send verification email', err)
+  )
+
   const token = generateToken(user._id.toString())
 
   logger.info(`User registered: ${username} (${email})`)
@@ -55,6 +63,7 @@ export async function getProfile(userId: string): Promise<{
   email: string
   avatar?: string
   role: string
+  isVerified: boolean
   createdAt: Date
 }> {
   const user = await User.findById(userId).select('-password')
@@ -66,6 +75,7 @@ export async function getProfile(userId: string): Promise<{
     email: user.email,
     avatar: user.avatar,
     role: user.role,
+    isVerified: user.isVerified,
     createdAt: user.createdAt,
   }
 }
@@ -96,4 +106,64 @@ export async function updateProfile(
     avatar: user.avatar,
     role: user.role,
   }
+}
+
+export async function verifyEmail(
+  token: string
+): Promise<{ message: string }> {
+  const user = await User.findOne({ verificationToken: token })
+  if (!user) {
+    throw new Error('Invalid or expired verification token')
+  }
+
+  user.isVerified = true
+  user.verificationToken = undefined
+  await user.save()
+
+  logger.info(`Email verified for user: ${user.email}`)
+  return { message: 'Email verified successfully' }
+}
+
+export async function forgotPassword(
+  email: string
+): Promise<{ message: string }> {
+  const user = await User.findOne({ email })
+  if (!user) {
+    logger.warn(`Password reset requested for unknown email: ${email}`)
+    return { message: 'If an account with that email exists, a reset link has been sent' }
+  }
+
+  const resetToken = crypto.randomBytes(32).toString('hex')
+  user.resetPasswordToken = resetToken
+  user.resetPasswordExpires = new Date(Date.now() + 3600000)
+  await user.save()
+
+  sendPasswordResetEmail(email, resetToken).catch((err) =>
+    logger.error('Failed to send password reset email', err)
+  )
+
+  logger.info(`Password reset email sent to: ${email}`)
+  return { message: 'If an account with that email exists, a reset link has been sent' }
+}
+
+export async function resetPassword(
+  token: string,
+  password: string
+): Promise<{ message: string }> {
+  const user = await User.findOne({
+    resetPasswordToken: token,
+    resetPasswordExpires: { $gt: new Date() },
+  }).select('+password')
+
+  if (!user) {
+    throw new Error('Invalid or expired reset token')
+  }
+
+  user.password = password
+  user.resetPasswordToken = undefined
+  user.resetPasswordExpires = undefined
+  await user.save()
+
+  logger.info(`Password reset successful for user: ${user.email}`)
+  return { message: 'Password reset successfully' }
 }
