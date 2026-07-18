@@ -42,8 +42,13 @@ export default function Library({
     mod.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleOpenFolder = (modTitle: string) => {
-    alert(`Opened folder Explorer path:\nC:\\Users\\adspm2323\\Documents\\Euro Truck Simulator 2\\mod\\${modTitle.replace(/\s+/g, '_')}`);
+  const handleOpenFolder = async (modTitle: string) => {
+    if (window.electronAPI) {
+      const modFolder = await window.electronAPI.getModFolder();
+      await window.electronAPI.openFolder(modFolder);
+    } else {
+      alert(`Opened folder: ${modTitle}`);
+    }
   };
 
   return (

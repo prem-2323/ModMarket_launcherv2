@@ -54,15 +54,18 @@ export default function TitleBar({
       utterance.rate = 1.1;
       speech.speak(utterance);
     }
-    // Visual indicators or alerts
     if (action === 'Close') {
-      if (confirm('Are you sure you want to exit ModMarket Launcher v2? This will suspend all background mod downloads.')) {
-        alert('Launcher minimized to system tray.');
+      if (window.electronAPI) {
+        window.electronAPI.confirm('Are you sure you want to exit ModMarket Launcher v2? This will suspend all background mod downloads.').then((confirmed) => {
+          if (confirmed) window.electronAPI.closeWindow();
+        });
+      } else {
+        if (confirm('Are you sure you want to exit ModMarket Launcher v2?')) window.close();
       }
     } else if (action === 'Minimize') {
-      alert('Launcher minimized. Running in high-performance gaming overlay mode.');
+      window.electronAPI ? window.electronAPI.minimizeWindow() : alert('Minimize');
     } else if (action === 'Maximize') {
-      alert('Viewport maximized to immersive borderless desktop mode.');
+      window.electronAPI ? window.electronAPI.maximizeWindow() : alert('Maximize');
     }
   };
 

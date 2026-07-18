@@ -105,6 +105,19 @@ export default function App() {
     return saved ? JSON.parse(saved) : SEED_NOTIFS;
   });
 
+  // ETS2 detection on startup via Electron API
+  useEffect(() => {
+    if (window.electronAPI) {
+      window.electronAPI.detectETS2().then((result) => {
+        if (result.ets2Installed) {
+          pushNotification('ETS2 Found', `Euro Truck Simulator 2 detected at ${result.ets2Path}`, 'success');
+        } else {
+          pushNotification('ETS2 Not Found', 'Could not locate Euro Truck Simulator 2 installation.', 'warning');
+        }
+      });
+    }
+  }, []);
+
   // Flow State
   const [isAudioOn, setIsAudioOn] = useState<boolean>(true);
   const [isLaunching, setIsLaunching] = useState<boolean>(false);
@@ -240,35 +253,56 @@ export default function App() {
   };
 
   // Launch Game Overlay trigger
-  const handleLaunchGame = () => {
+  const handleLaunchGame = async () => {
     if (isGameRunning) {
-      if (confirm('Euro Truck Simulator 2 is already active in virtual process overlay. Would you like to force exit the client?')) {
-        setIsGameRunning(false);
-        pushNotification('Game Stopped', 'Euro Truck Simulator 2 process ended successfully.', 'info');
-      }
+      const shouldStop = window.electronAPI
+        ? await window.electronAPI.confirm('Euro Truck Simulator 2 is already running. Force exit?')
+        : confirm('Euro Truck Simulator 2 is already active. Force exit?');
+      if (!shouldStop) return;
+      setIsGameRunning(false);
+      if (window.electronAPI) await window.electronAPI.stopETS2();
+      pushNotification('Game Stopped', 'Euro Truck Simulator 2 process ended successfully.', 'info');
       return;
     }
     setIsLaunching(true);
   };
 
-  const handleCompleteLaunch = () => {
+  const handleCompleteLaunch = async () => {
     setIsLaunching(false);
-    setIsGameRunning(true);
-    pushNotification('ETS2 Process Running', 'Game launched in performance desktop wrapper. Overlay is active.', 'success');
+
+    if (window.electronAPI) {
+      const result = await window.electronAPI.launchETS2();
+      if (result.success) {
+        setIsGameRunning(true);
+        pushNotification('ETS2 Process Running', 'Game launched via Steam. Overlay is active.', 'success');
+      } else {
+        pushNotification('Launch Failed', result.error || 'Could not launch ETS2. Check your installation.', 'warning');
+      }
+    } else {
+      setIsGameRunning(true);
+      pushNotification('ETS2 Process Running', 'Game launched in performance desktop wrapper. Overlay is active.', 'success');
+    }
   };
 
   // Quick Action Diagnostics trigger
-  const handleTriggerQuickAction = (actionName: string) => {
-    alert(`Initializing diagnostic utility script: "${actionName}"...`);
+  const handleTriggerQuickAction = async (actionName: string) => {
+    if (window.electronAPI) {
+      await window.electronAPI.alert(`Initializing diagnostic utility script: "${actionName}"...`);
+    } else {
+      alert(`Initializing diagnostic utility script: "${actionName}"...`);
+    }
     
-    // Simulate brief diagnostics
-    setTimeout(() => {
+    setTimeout(async () => {
       pushNotification(
         'Diagnostic Completed',
         `Successfully executed ${actionName} without errors. File hashes verified green.`,
         'success'
       );
-      alert(`Success: ${actionName} finished executing successfully!`);
+      if (window.electronAPI) {
+        await window.electronAPI.alert(`Success: ${actionName} finished executing successfully!`);
+      } else {
+        alert(`Success: ${actionName} finished executing successfully!`);
+      }
     }, 1000);
   };
 
@@ -309,12 +343,14 @@ export default function App() {
     pushNotification('Load Order Updated', 'Load priorities have been rearranged cleanly to optimize loading sequence.', 'info');
   };
 
-  const handleDeleteMod = (modId: string) => {
-    if (confirm('Are you sure you want to uninstall this mod? This will remove all local SCS pack files from your documents directory.')) {
-      setInstalledMods((prev) => prev.filter((m) => m.id !== modId));
-      setDownloads((prev) => prev.filter((d) => d.id !== modId));
-      pushNotification('Mod Uninstalled', 'Modification files permanently removed.', 'warning');
-    }
+  const handleDeleteMod = async (modId: string) => {
+    const confirmed = window.electronAPI
+      ? await window.electronAPI.confirm('Uninstall this mod? All local SCS pack files will be removed.')
+      : confirm('Are you sure you want to uninstall this mod?');
+    if (!confirmed) return;
+    setInstalledMods((prev) => prev.filter((m) => m.id !== modId));
+    setDownloads((prev) => prev.filter((d) => d.id !== modId));
+    pushNotification('Mod Uninstalled', 'Modification files permanently removed.', 'warning');
   };
 
   const handleUpdateMod = (modId: string) => {
@@ -322,8 +358,12 @@ export default function App() {
     pushNotification('Mod Updated', 'Modification files flashed to the latest version.', 'success');
   };
 
-  const handleRepairMod = (modId: string) => {
-    alert('Scanning CRC block checksums and validating package indexes...');
+  const handleRepairMod = async (modId: string) => {
+    if (window.electronAPI) {
+      await window.electronAPI.alert('Scanning CRC block checksums and validating package indexes...');
+    } else {
+      alert('Scanning CRC block checksums and validating package indexes...');
+    }
     pushNotification('Repair Successful', 'Checked modification integrity. 0 corrupt nodes found.', 'success');
   };
 

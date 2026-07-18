@@ -44,7 +44,7 @@ export default function Dashboard({
       <div 
         className="relative h-64 rounded-2xl overflow-hidden border border-[#232F4C] bg-cover bg-center shadow-[0_4px_24px_rgba(0,0,0,0.4)] group"
         style={{ 
-          backgroundImage: `linear-gradient(to right, #0B0F19 20%, rgba(11, 15, 25, 0.4) 60%, rgba(18, 207, 206, 0.1) 100%), url('https://images.unsplash.com/photo-1518659276927-5da44177455e?auto=format&fit=crop&w=1200&q=80')` 
+          backgroundImage: `linear-gradient(to right, #0B0F19 20%, rgba(11, 15, 25, 0.4) 60%, rgba(18, 207, 206, 0.1) 100%), url('https://images.unsplash.com/photo-1547394765-185e1e68f34e?auto=format&fit=crop&w=1200&q=80')` 
         }}
       >
         {/* Glow effect */}

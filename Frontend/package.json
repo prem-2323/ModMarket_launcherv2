@@ -5,16 +5,18 @@
   "author": "Prem",
   "private": true,
   "version": "2.0.0",
-  "main": "electron/main.cjs",
+  "main": "build-electron/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
+    "build:electron": "node scripts/build-electron.mjs",
+    "build:all": "npm run build && npm run build:electron",
     "preview": "vite preview",
-    "clean": "rm -rf dist server.js",
+    "clean": "rm -rf dist build-electron",
     "lint": "tsc --noEmit",
-    "electron:build": "vite build && electron-builder",
-    "electron:dev": "concurrently -k \"vite\" \"wait-on http://localhost:3000 && electron .\""
+    "electron:build": "npm run build:all && electron-builder",
+    "electron:dev": "concurrently -k \"vite --port=3000 --host=0.0.0.0\" \"wait-on http://localhost:3000 && node scripts/build-electron.mjs && npx electron .\""
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -47,9 +49,12 @@
     "productName": "ModMarket Launcher",
     "files": [
       "dist/**/*",
-      "electron/**/*",
+      "build-electron/**/*",
       "package.json"
     ],
+    "extraMetadata": {
+      "main": "build-electron/main.cjs"
+    },
     "directories": {
       "output": "dist"
     },

@@ -31,14 +31,30 @@ export default function SettingsView({
   const [currentLanguage, setCurrentLanguage] = useState('English (US)');
   const [cacheSize, setCacheSize] = useState('324.5 MB');
 
-  const handlePurgeCache = () => {
-    alert('Clearing local image metadata and temporary unpack bundles...');
+  const handlePurgeCache = async () => {
+    if (window.electronAPI) {
+      const confirmed = await window.electronAPI.confirm('Clear all local cache data? This will remove temporary files.');
+      if (!confirmed) return;
+    }
     setCacheSize('0.0 MB');
-    alert('Cache purged successfully! Reclaimed 324.5 MB of solid state storage.');
+    if (window.electronAPI) {
+      await window.electronAPI.alert('Cache purged successfully!');
+    } else {
+      alert('Cache purged successfully! Reclaimed 324.5 MB of solid state storage.');
+    }
   };
 
-  const handleBrowsePath = (field: string) => {
-    alert(`Browse folder dialog mock for: ${field}. Path updated successfully.`);
+  const handleBrowsePath = async (field: string) => {
+    if (window.electronAPI) {
+      const result = await window.electronAPI.selectFolder({ title: `Select ${field}` });
+      if (!result.canceled && result.path) {
+        if (field === 'Mod folder') setDownloadFolder(result.path);
+        else if (field === 'ETS2 game path') setGameFolder(result.path);
+        else if (field === 'Steam path') setSteamFolder(result.path);
+      }
+    } else {
+      alert(`Browse folder dialog mock for: ${field}. Path updated successfully.`);
+    }
   };
 
   return (

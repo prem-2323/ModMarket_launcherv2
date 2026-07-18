@@ -132,9 +132,9 @@ export const MOCK_MODS: Mod[] = [
     version: '1.2.0',
     fileSize: '150 MB',
     releaseDate: '2026-04-15',
-    thumbnail: 'https://images.unsplash.com/photo-1590496793993-376579a3e16a?auto=format&fit=crop&w=600&q=80',
+    thumbnail: 'https://images.unsplash.com/photo-1580674684081-7617fbf3d745?auto=format&fit=crop&w=600&q=80',
     screenshots: [
-      'https://images.unsplash.com/photo-1590496793993-376579a3e16a?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1580674684081-7617fbf3d745?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=1200&q=80'
     ],
     description: 'This trailer modification features full 1:1 scale replicas of Krone MegaLiner trailers. Packed with customizable mudflaps, reflection stickers, custom license plates, side markers, and paintable canvases, it represents the premium hauling standard in Europe.',
@@ -207,9 +207,9 @@ export const MOCK_MODS: Mod[] = [
     version: '4.2',
     fileSize: '45 MB',
     releaseDate: '2026-03-10',
-    thumbnail: 'https://images.unsplash.com/photo-1518659276927-5da44177455e?auto=format&fit=crop&w=600&q=80',
+    thumbnail: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80',
     screenshots: [
-      'https://images.unsplash.com/photo-1518659276927-5da44177455e?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=1200&q=80'
     ],
     description: 'Bring realism back to truck handling. This physics override alters truck and trailer suspension rates, tires adhesion coefficient, cabin rolling behavior, and dynamic cargo shifting. Perfect for steering wheel users seeking heavy haul immersion.',
     features: [
